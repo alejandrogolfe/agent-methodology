@@ -1,67 +1,67 @@
 # 🛡️ Governance
 
-[← Monitor](04-monitor.md) · [Volver al índice](../README.md) · Siguiente: [☁️ AWS Mapping →](06-aws-mapping.md)
+[← Monitor](04-monitor.md) · [Back to index](../README.md) · Next: [☁️ AWS Mapping →](06-aws-mapping.md)
 
-## La idea central
+## The core idea
 
-La gobernanza no es una fase más del ciclo — envuelve a las otras cuatro. Para un solo agente, unos controles ligeros suelen bastar: el equipo que lo construyó sabe qué hace, cuánto cuesta y a qué tiene acceso. El problema aparece cuando la organización empieza a desplegar **muchos** agentes a la vez. Sin gobernanza, eso se convierte rápido en agentes difíciles de descubrir, difíciles de monitorizar, caros de operar, y poco claros en lo que tienen permitido hacer.
+Governance is not another phase of the cycle — it wraps the other four. For a single agent, light controls are usually enough: the team that built it knows what it does, how much it costs and what it has access to. The problem appears when the organization starts deploying **many** agents at once. Without governance, that quickly turns into agents that are hard to discover, hard to monitor, expensive to operate, and unclear in what they are allowed to do.
 
-La gobernanza bien hecha no existe para frenar la velocidad de los equipos. Existe para que la iteración rápida sea posible **sin perder visibilidad, control o consistencia** a medida que el número de agentes crece.
+Good governance does not exist to slow teams down. It exists so that rapid iteration remains possible **without losing visibility, control or consistency** as the number of agents grows.
 
 ```mermaid
 flowchart TD
-    G["🛡️ Governance"] --> C["💰 Cost<br/>presupuestos, alertas,<br/>visibilidad por agente/equipo"]
-    G --> T["🔧 Tool Access<br/>qué puede tocar cada agente,<br/>bajo qué condiciones"]
-    T --> AU["📋 Audit Trails<br/>quién llamó qué, con qué<br/>input/output, autorizado por quién"]
-    T --> H["🧑 Human-in-the-loop<br/>qué operaciones requieren<br/>aprobación humana"]
-    G --> D["🔍 Discoverability<br/>reutilización de skills,<br/>prompts, tools, agentes"]
+    G["🛡️ Governance"] --> C["💰 Cost<br/>budgets, alerts,<br/>visibility per agent/team"]
+    G --> T["🔧 Tool Access<br/>what each agent can touch,<br/>under what conditions"]
+    T --> AU["📋 Audit Trails<br/>who called what, with what<br/>input/output, authorized by whom"]
+    T --> H["🧑 Human-in-the-loop<br/>which operations require<br/>human approval"]
+    G --> D["🔍 Discoverability<br/>reuse of skills,<br/>prompts, tools, agents"]
 ```
 
-## Cost — el primer reto de gobernanza
+## Cost — the first governance challenge
 
-Los agentes pueden volverse caros por razones que no siempre son obvias al principio: múltiples llamadas al modelo por tarea, ventanas de contexto largas, uso repetido de herramientas, reintentos, o tareas que simplemente corren durante mucho tiempo. Una sola tarea "simple" puede esconder docenas de llamadas a modelo si el agente itera lo suficiente.
+Agents can become expensive for reasons that are not always obvious at first: multiple model calls per task, long context windows, repeated tool use, retries, or tasks that simply run for a long time. A single "simple" task can hide dozens of model calls if the agent iterates enough.
 
-La organización necesita formas de rastrear y gestionar ese gasto: presupuestos, monitorización de uso, alertas, y visibilidad sobre **qué agentes, equipos, modelos o herramientas** están generando el coste. Sin esta visibilidad granular, "el gasto en IA subió" no dice nada útil sobre qué hacer al respecto.
+The organization needs ways to track and manage that spend: budgets, usage monitoring, alerts, and visibility into **which agents, teams, models or tools** are generating the cost. Without this granular visibility, "AI spend went up" says nothing useful about what to do about it.
 
-## Tool Access — el segundo reto
+## Tool Access — the second challenge
 
-Los agentes son útiles precisamente porque pueden **actuar**, no solo responder. Eso introduce riesgo real: hace falta control claro sobre qué herramientas puede usar un agente, bajo qué condiciones, y en nombre de qué usuario.
+Agents are useful precisely because they can **act**, not just respond. That introduces real risk: clear control is needed over which tools an agent can use, under what conditions, and on behalf of which user.
 
 ### Audit trails
 
-Si un agente llama a una herramienta, la organización tiene que poder inspeccionar: qué agente hizo la llamada, qué inputs usó, qué outputs produjo, y qué usuario o política autorizó esa acción. Las llamadas a herramientas son, casi siempre, el punto donde el comportamiento del agente tiene impacto real en el negocio — por eso necesitan ser observables y revisables, no una caja negra.
+If an agent calls a tool, the organization must be able to inspect: which agent made the call, what inputs it used, what outputs it produced, and which user or policy authorized that action. Tool calls are almost always the point where agent behavior has real business impact — that is why they need to be observable and reviewable, not a black box.
 
 ### Human-in-the-loop
 
-No toda llamada a herramienta debería automatizarse por completo. Algunas operaciones deberían pausarse para revisión humana — especialmente cuando involucran clientes, sistemas financieros, datos sensibles, o infraestructura de producción. El human-in-the-loop funciona mejor cuando se diseña **desde el principio** del sistema, no como un parche añadido después de un incidente.
+Not every tool call should be fully automated. Some operations should pause for human review — especially when they involve customers, financial systems, sensitive data, or production infrastructure. Human-in-the-loop works best when it is designed **from the beginning** of the system, not patched in after an incident.
 
-> Conexión directa con [Deploy → Runtime](03-deploy.md#runtime--la-base-de-la-ejecución): la capacidad de pausar y reanudar de forma fiable es lo que hace que el human-in-the-loop sea viable en la práctica, en lugar de una promesa que se rompe en el primer fallo de red.
+> Direct connection to [Deploy → Runtime](03-deploy.md#runtime--the-foundation-of-execution): the ability to pause and resume reliably is what makes human-in-the-loop viable in practice, rather than a promise that breaks on the first network failure.
 
-## Discoverability — el tercer reto
+## Discoverability — the third challenge
 
-A medida que una organización construye más agentes, también acumula más activos reutilizables: prompts, skills, herramientas, fuentes de retrieval, políticas, e incluso otros agentes. Sin buenos mecanismos de descubrimiento y gobernanza, los equipos tienden a **reconstruir estos componentes una y otra vez**, lo que lleva a inconsistencia — distintos equipos resolviendo el mismo problema de formas distintas, con distinta calidad.
+As an organization builds more agents, it also accumulates more reusable assets: prompts, skills, tools, retrieval sources, policies, and even other agents. Without good discovery and governance mechanisms, teams tend to **rebuild these components over and over**, leading to inconsistency — different teams solving the same problem in different ways, with different quality.
 
-Esto importa especialmente para **skills**: una skill puede encapsular un flujo de trabajo, un estilo de escritura, un procedimiento específico de dominio, o instrucciones para usar una herramienta concreta. Si un equipo ya construyó una skill buena, otro equipo debería poder **encontrarla y reutilizarla** en lugar de escribir su propia versión desde cero.
+This matters especially for **skills**: a skill can encapsulate a workflow, a writing style, a specific domain procedure, or instructions for using a specific tool. If one team already built a good skill, another team should be able to **find and reuse it** rather than write their own version from scratch.
 
-> Conexión directa con [Deploy → Context Hub](03-deploy.md#context-hub--gestionar-prompts-y-contexto-como-un-sistema-aparte-del-código): el context hub es, entre otras cosas, la infraestructura que hace posible la discoverability — sin un sitio central y versionado donde vivan las skills y prompts, no hay nada que "descubrir".
+> Direct connection to [Deploy → Context Hub](03-deploy.md#context-hub--managing-prompts-and-context-separately-from-code): the context hub is, among other things, the infrastructure that makes discoverability possible — without a central, versioned place where skills and prompts live, there is nothing to "discover".
 
-## Preguntas para decidir
+## Key decisions
 
-1. **¿Puedo saber, hoy mismo, cuánto está gastando cada agente individual?** Si no, falta granularidad en el tracking de coste — y eso suele significar que el gasto sube sin que nadie lo note hasta la factura.
-2. **¿Qué pasaría si este agente llamara a la herramienta equivocada en producción?** Si la respuesta da miedo, esa herramienta necesita o bien restricciones más estrictas de acceso, o bien un paso de aprobación humana antes de ejecutarse.
-3. **¿Puedo reconstruir, para cualquier llamada a herramienta de los últimos 30 días, quién la autorizó y con qué input?** Si no, el audit trail tiene huecos.
-4. **¿Este equipo está a punto de reescribir una skill que ya existe en otro lado de la organización?** Antes de escribir código nuevo, busco en el repositorio compartido de contexto/skills.
-5. **¿La gobernanza que estoy añadiendo ralentiza la iteración, o solo añade visibilidad?** Si ralentiza sin añadir control real, probablemente está mal diseñada — el objetivo es visibilidad sin fricción, no burocracia.
+1. **Can I know, right now, how much each individual agent is spending?** If not, granularity in cost tracking is missing — and that usually means spend rises without anyone noticing until the bill arrives.
+2. **What would happen if this agent called the wrong tool in production?** If the answer is frightening, that tool needs either stricter access restrictions or a human approval step before it executes.
+3. **Can I reconstruct, for any tool call in the past 30 days, who authorized it and with what input?** If not, the audit trail has gaps.
+4. **Is this team about to rewrite a skill that already exists somewhere else in the organization?** Before writing new code, I check the shared context/skill repository.
+5. **Does the governance I'm adding slow down iteration, or does it only add visibility?** If it slows down without adding real control, it is probably badly designed — the goal is visibility without friction, not bureaucracy.
 
-## Conexión con AWS
+## AWS Connection
 
-- **Cost** → métricas de uso e invocación por recurso en **CloudWatch** (namespace `Bedrock-AgentCore`), combinadas con **AWS Cost Explorer** y tags por agente/equipo/proyecto a nivel de cuenta o de recurso para atribuir gasto. Para límites duros, **AWS Budgets** con alertas.
-- **Tool Access + Audit Trails** → **AgentCore Identity** gestiona qué credenciales y permisos delega el agente al llamar a servicios externos (OAuth) o recursos AWS, con acceso de alcance limitado (*scoped access*) y delegación segura de permisos. Los logs de **AgentCore Gateway** y **AgentCore Runtime** en CloudWatch incluyen `request_id`, `trace_id` y `span_id`, lo que permite reconstruir qué agente llamó qué herramienta, con qué input/output. **AWS IAM** sigue siendo la capa base de control de acceso (políticas basadas en recursos para los evaluadores/gateways, políticas basadas en identidad para usuarios y roles).
-- **Human-in-the-loop** → soportado de forma nativa en los runtimes de orquestación (LangGraph, o el propio AgentCore Runtime vía pausas de sesión); para flujos de aprobación más tradicionales, esto se suele integrar con colas de tareas o notificaciones (SQS/SNS) hacia un sistema de revisión.
-- **Discoverability** → **AgentCore Agent Registry** (en preview a fecha de esta nota): un sitio único para descubrir, compartir y reutilizar agentes, herramientas y skills dentro de la organización, con flujos de aprobación y búsqueda integrados — el equivalente más directo a la idea de discoverability descrita arriba.
-- **Guardrails de comportamiento** → **AgentCore Policy**, que da control sobre qué acciones puede tomar un agente, ayudando a mantenerlo dentro de límites definidos sin frenar la velocidad de desarrollo — complementa el audit trail (que es retrospectivo) con control preventivo (que actúa antes de que la acción ocurra).
+- **Cost** → usage and invocation metrics per resource in **CloudWatch** (namespace `Bedrock-AgentCore`), combined with **AWS Cost Explorer** and tags per agent/team/project at account or resource level for spend attribution. For hard limits, **AWS Budgets** with alerts.
+- **Tool Access + Audit Trails** → **AgentCore Identity** manages which credentials and permissions the agent delegates when calling external services (OAuth) or AWS resources, with scoped access and secure permission delegation. The **AgentCore Gateway** and **AgentCore Runtime** logs in CloudWatch include `request_id`, `trace_id` and `span_id`, making it possible to reconstruct which agent called which tool, with what input/output. **AWS IAM** remains the base access control layer (resource-based policies for evaluators/gateways, identity-based policies for users and roles).
+- **Human-in-the-loop** → natively supported in orchestration runtimes (LangGraph, or AgentCore Runtime itself via session pauses); for more traditional approval flows, this is usually integrated with task queues or notifications (SQS/SNS) to a review system.
+- **Discoverability** → **AgentCore Agent Registry** (in preview as of this note): a single place to discover, share and reuse agents, tools and skills within the organization, with integrated approval flows and search — the most direct AWS equivalent to the discoverability idea described above.
+- **Behavioral guardrails** → **AgentCore Policy**, which gives control over what actions an agent can take, helping keep it within defined boundaries without slowing development speed — it complements the audit trail (which is retrospective) with preventive control (which acts before the action occurs).
 
-## Referencias
+## References
 
 - LangChain — [The Agent Development Lifecycle](https://www.langchain.com/blog/the-agent-development-lifecycle)
 - AWS — [Amazon Bedrock AgentCore FAQs](https://aws.amazon.com/bedrock/agentcore/faqs/)

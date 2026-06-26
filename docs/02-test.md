@@ -1,89 +1,89 @@
 # 🧪 Test
 
-[← Build](01-build.md) · [Volver al índice](../README.md) · Siguiente: [🚀 Deploy →](03-deploy.md)
+[← Build](01-build.md) · [Back to index](../README.md) · Next: [🚀 Deploy →](03-deploy.md)
 
-## La idea central
+## The core idea
 
-No hace falta una suite de evals perfecta antes de que nadie use el agente — eso casi nunca es realista. Lo que hace falta es tener **suficientes evals para detectar fallos obvios, comparar versiones, y no desplegar cambios a ciegas**. La calidad del testing crece con el tiempo: empieza con un puñado de casos representativos y se va reforzando con lo que aparece en producción.
+You don't need a perfect eval suite before anyone uses the agent — that is almost never realistic. What you need is **enough evals to catch obvious failures, compare versions, and not deploy changes blindly**. Testing quality grows over time: start with a handful of representative cases and reinforce it with what surfaces in production.
 
-El testing de agentes es distinto al testing de software tradicional por una razón de fondo: el comportamiento es **no determinista**. La misma tarea puede tener éxito el 90% de las veces y fallar el 10% restante. Un solo resultado pass/fail no dice casi nada — hace falta pensar en distribuciones, no en booleanos.
+Testing agents is different from testing traditional software for a fundamental reason: behavior is **non-deterministic**. The same task may succeed 90% of the time and fail the remaining 10%. A single pass/fail result tells you almost nothing — you need to think in distributions, not booleans.
 
 ```mermaid
 flowchart LR
-    I["📥 INPUTS<br/>de dónde salen los casos"] --> DS["📦 DATASETS<br/>dónde se guardan y versionan"]
-    DS --> M["📐 METRICS<br/>cómo se mide el éxito"]
-    M --> E["🔬 EXPERIMENTS<br/>comparar versiones contra<br/>el mismo dataset"]
-    E -.->|fallos nuevos se<br/>convierten en casos| DS
-    PROD["🏭 Producción<br/>(Monitor)"] -.->|trazas reales| I
+    I["📥 INPUTS<br/>where cases come from"] --> DS["📦 DATASETS<br/>where they are stored and versioned"]
+    DS --> M["📐 METRICS<br/>how success is measured"]
+    M --> E["🔬 EXPERIMENTS<br/>compare versions against<br/>the same dataset"]
+    E -.->|new failures become<br/>test cases| DS
+    PROD["🏭 Production<br/>(Monitor)"] -.->|real traces| I
 ```
 
-## Las cuatro piezas: Inputs, Datasets, Metrics, Experiments
+## The four pieces: Inputs, Datasets, Metrics, Experiments
 
-### Inputs — de dónde salen los casos de prueba
+### Inputs — where test cases come from
 
-No todos los casos de prueba nacen igual ni cuestan igual de obtener. Las fuentes típicas, de menor a mayor "realismo":
+Not all test cases are born equal or cost the same to obtain. Typical sources, from least to most "realistic":
 
-- **Expected tasks** — los casos que yo mismo anticipo que el agente tiene que resolver bien. Es el punto de partida obligatorio: si no cubro esto, no tengo ni una línea base.
-- **Edge cases** — situaciones límite que sé (o sospecho) que rompen el comportamiento normal: inputs ambiguos, datos faltantes, formatos inesperados.
-- **Dogfooding trace** — una traza capturada mientras el propio equipo (o usuarios internos) usa el agente de forma genuina, no como test sintético. La diferencia con un caso "inventado" es que el dogfooding trace refleja cómo se usa el agente *de verdad*, con toda la ambigüedad real del lenguaje humano. Suele ser la fuente de casos más valiosa en fases tempranas, antes de tener tráfico de producción real.
-- **Simulations** — interacciones simuladas de extremo a extremo, normalmente multi-turno (ver más abajo). Útiles cuando no se puede o no se quiere esperar a tráfico real para descubrir fallos de conversación larga.
+- **Expected tasks** — the cases I myself anticipate the agent must handle well. This is the mandatory starting point: if I don't cover this, I have no baseline at all.
+- **Edge cases** — boundary situations I know (or suspect) break normal behavior: ambiguous inputs, missing data, unexpected formats.
+- **Dogfooding trace** — a trace captured while the team itself (or internal users) uses the agent genuinely, not as a synthetic test. The difference from an "invented" case is that a dogfooding trace reflects how the agent is *actually* used, with all the real ambiguity of human language. It is usually the most valuable source of cases in early stages, before having real production traffic.
+- **Simulations** — simulated end-to-end interactions, typically multi-turn (see below). Useful when you cannot or do not want to wait for real traffic to discover long-conversation failures.
 
-> La progresión natural es: empiezo con expected tasks + edge cases que invento yo; en cuanto tengo dogfooding, lo incorporo; en cuanto tengo producción real (ver [Monitor](04-monitor.md)), las trazas de producción pasan a ser la fuente dominante.
+> The natural progression is: I start with expected tasks + edge cases I invent myself; as soon as I have dogfooding, I incorporate it; as soon as I have real production (see [Monitor](04-monitor.md)), production traces become the dominant source.
 
-### Datasets — cómo se preservan los casos
+### Datasets — how cases are preserved
 
-Un dataset es la forma de **no perder lo que ya se aprendió**. Sin datasets, el mismo fallo reaparece después de cada cambio de prompt, de modelo, o de actualización de una herramienta — porque nadie se acuerda de volver a probar ese caso concreto.
+A dataset is the way to **not lose what has already been learned**. Without datasets, the same failure reappears after every prompt change, model change, or tool update — because no one remembers to retest that specific case.
 
-- **Examples** — los casos "normales", representativos del uso esperado. Sirven de línea base de comportamiento correcto.
-- **Hard cases** — los casos que de verdad cuestan: los que en algún momento hicieron fallar al agente. Estos son los que más valor aportan por caso incluido.
-- **Regression coverage** — el subconjunto de casos (normalmente los hard cases ya resueltos) que se vuelve a correr en cada cambio para asegurar que una mejora en un sitio no rompe algo que ya funcionaba en otro. Es literalmente "tests de regresión", igual que en software tradicional, pero aplicado a comportamiento de agente: cada vez que arreglo un fallo real, ese caso entra en regression coverage para siempre. Si no hago esto, los mismos errores vuelven a aparecer ciclo tras ciclo.
+- **Examples** — the "normal" cases, representative of expected usage. They serve as the baseline for correct behavior.
+- **Hard cases** — the cases that are genuinely difficult: those that at some point caused the agent to fail. These deliver the most value per case included.
+- **Regression coverage** — the subset of cases (usually the hard cases already resolved) that gets re-run on every change to ensure an improvement in one place doesn't break something that was already working elsewhere. It is literally "regression tests", the same as in traditional software, but applied to agent behavior: every time I fix a real failure, that case enters regression coverage permanently. If I don't do this, the same errors resurface cycle after cycle.
 
-### Metrics — cómo se mide el éxito
+### Metrics — how success is measured
 
-La métrica correcta depende del tipo de tarea, y aquí hay una distinción importante:
+The right metric depends on the type of task, and there is an important distinction here:
 
-- **Con ground truth claro**: ¿extrajo el valor correcto? ¿eligió la etiqueta correcta? ¿actualizó el campo correcto? Estas tareas se miden por **corrección directa** (exact match, comparación contra referencia).
-- **Sin ground truth único**: escribir una respuesta, resumir una conversación, decidir si escalar, completar una tarea con múltiples caminos válidos. Aquí no hay "la" respuesta correcta, así que se recurre a **evaluación por criterios**: ¿la respuesta está fundamentada (grounded)? ¿siguió la política? ¿pidió aclaración cuando debía? ¿completó la tarea sin llamadas a herramientas innecesarias?
+- **With clear ground truth**: did it extract the correct value? Did it choose the correct label? Did it update the correct field? These tasks are measured by **direct correctness** (exact match, comparison against reference).
+- **Without a unique ground truth**: writing a response, summarizing a conversation, deciding whether to escalate, completing a task with multiple valid paths. Here there is no single "correct" answer, so you resort to **criteria-based evaluation**: is the response grounded? Did it follow the policy? Did it ask for clarification when it should? Did it complete the task without unnecessary tool calls?
 
-> 🚧 El criterio de "eficiencia" (no hacer llamadas a herramientas de más) es fácil de pasar por alto pero importa mucho en coste — ver [Governance → Cost](05-governance.md#cost).
+> 🚧 The "efficiency" criterion (not making unnecessary tool calls) is easy to overlook but matters a lot for cost — see [Governance → Cost](05-governance.md#cost--the-first-governance-challenge).
 
-### Experiments — lo que conecta datasets y métricas con la iteración
+### Experiments — what connects datasets and metrics with iteration
 
-Un experimento es correr el mismo dataset contra una variación: distinto prompt, distinto modelo, distinta estrategia de retrieval, distinto esquema de herramienta, distinta forma de orquestar. El objetivo es comparar versiones de forma controlada y ver, con el tiempo, si el agente mejora o empeora.
+An experiment is running the same dataset against a variation: different prompt, different model, different retrieval strategy, different tool schema, different orchestration approach. The goal is to compare versions in a controlled way and see, over time, whether the agent improves or degrades.
 
-Sin experimentos estructurados, cualquier cambio se evalúa "a ojo" — y eso es exactamente lo que un dataset + métricas está diseñado para evitar.
+Without structured experiments, any change is evaluated "by eye" — and that is exactly what a dataset + metrics is designed to avoid.
 
-## Simulations — por qué el testing de un solo turno no basta
+## Simulations — why single-turn testing isn't enough
 
-Muchos agentes son sistemas multi-turno: no responden una pregunta y terminan, sino que mantienen una conversación, recopilan información, llaman herramientas, actualizan estado y se recuperan de la ambigüedad. Para estos agentes, un eval de un solo turno no detecta fallos que solo aparecen tres o cuatro turnos después.
+Many agents are multi-turn systems: they don't answer a question and finish, they maintain a conversation, gather information, call tools, update state and recover from ambiguity. For these agents, a single-turn eval doesn't detect failures that only appear three or four turns later.
 
-Ejemplos de dónde esto importa:
-- Un agente de voz, el caso más obvio.
-- Un agente de soporte que tiene que manejar a un cliente frustrado, hacer preguntas de seguimiento, comprobar el estado de un pedido y decidir si escalar.
-- Un agente de código que tiene que inspeccionar un repositorio, hacer cambios, correr tests y responder a feedback.
-- Un agente de operaciones internas que necesita reunir información que falta antes de actuar.
+Examples of where this matters:
+- A voice agent, the most obvious case.
+- A support agent that has to handle a frustrated customer, ask follow-up questions, check an order's status and decide whether to escalate.
+- A coding agent that has to inspect a repository, make changes, run tests and respond to feedback.
+- An internal operations agent that needs to gather missing information before acting.
 
-Para estos casos hacen falta **evals multi-turno y simulaciones de extremo a extremo** — no basta con comprobar la respuesta a un único input aislado.
+For these cases you need **multi-turn evals and end-to-end simulations** — checking the response to a single isolated input is not enough.
 
-## Preguntas para decidir
+## Key decisions
 
-1. **¿Tengo ground truth o no?** Define si mido por corrección directa o por criterios.
-2. **¿El agente es de un solo turno o conversacional?** Si es conversacional, necesito simulación multi-turno, no solo evals puntuales.
-3. **¿De dónde saco los primeros 10-20 casos?** Si no tengo nada, empiezo con expected tasks + edge cases inventados; no espero a tener producción para empezar a testear.
-4. **¿Este fallo que acabo de arreglar está ya en regression coverage?** Si no, lo añado ahora — antes de que se me olvide.
-5. **¿Estoy comparando como experimento o solo "probando a ver qué pasa"?** Si voy a cambiar algo (modelo, prompt, retrieval), lo corro como experimento contra el dataset existente, no como prueba suelta sin comparación.
+1. **Do I have ground truth or not?** This defines whether I measure by direct correctness or by criteria.
+2. **Is the agent single-turn or conversational?** If conversational, I need multi-turn simulation, not just point-in-time evals.
+3. **Where do I get the first 10–20 cases?** If I have nothing, I start with expected tasks + invented edge cases; I don't wait for production before starting to test.
+4. **Is this failure I just fixed already in regression coverage?** If not, I add it now — before I forget.
+5. **Am I comparing as an experiment or just "trying things out"?** If I'm going to change something (model, prompt, retrieval), I run it as an experiment against the existing dataset, not as a loose test without comparison.
 
-## Conexión con AWS
+## AWS Connection
 
-**Amazon Bedrock AgentCore Evaluations** (GA desde 2026) es la pieza que cubre casi todo este capítulo de forma gestionada:
+**Amazon Bedrock AgentCore Evaluations** (GA since 2026) is the piece that covers almost everything in this chapter in a managed way:
 
-- **Datasets** — Dataset management de AgentCore permite versionar conjuntos de escenarios (cada uno puede ser multi-turno) como recurso gestionado, referenciable por ID y versión desde un pipeline de CI/CD, replicando justo el concepto de regression coverage.
-- **Metrics** — AgentCore ofrece evaluadores integrados (built-in evaluators, identificados como `Builtin.NombreEvaluador`) para calidad de respuesta, seguridad, finalización de tarea y uso correcto de herramientas, además de soporte para **ground truth**: respuestas de referencia, aserciones de comportamiento a nivel de sesión, y secuencias esperadas de llamadas a herramientas.
-- **Experiments** — La **on-demand evaluation** (vía API o el **on-demand evaluation dataset runner**) está pensada exactamente para esto: correr el mismo dataset contra cada build en CI/CD, comparar modelos o prompts entre sí, y bloquear el despliegue si la puntuación cae por debajo de un umbral.
-- Si el stack ya usa LangGraph/LangChain en lugar de (o además de) AgentCore nativo, **LangSmith** cubre el mismo terreno (datasets, experiments, comparación lado a lado) de forma independiente de AWS, y puede convivir con un despliegue en AgentCore Runtime.
-- Para evaluación de un único modelo (sin agente completo: solo el LLM) existe también el **Bedrock Model Evaluation job** (accuracy, robustez, toxicidad) — pero es una herramienta de bucle de desarrollo de modelo, no sustituye una suite de evaluación de agente: no cubre invocación correcta de herramientas ni calidad de retrieval de una Knowledge Base.
+- **Datasets** — AgentCore Dataset management allows versioning sets of scenarios (each can be multi-turn) as a managed resource, referenceable by ID and version from a CI/CD pipeline, replicating exactly the concept of regression coverage.
+- **Metrics** — AgentCore offers built-in evaluators (identified as `Builtin.EvaluatorName`) for response quality, safety, task completion and correct tool use, plus support for **ground truth**: reference answers, session-level behavior assertions, and expected tool call sequences.
+- **Experiments** — The **on-demand evaluation** (via API or the **on-demand evaluation dataset runner**) is designed exactly for this: running the same dataset against each build in CI/CD, comparing models or prompts against each other, and blocking deployment if the score falls below a threshold.
+- If the stack already uses LangGraph/LangChain instead of (or in addition to) native AgentCore, **LangSmith** covers the same ground (datasets, experiments, side-by-side comparison) independently of AWS, and can coexist with an AgentCore Runtime deployment.
+- For evaluating a single model (without a full agent: just the LLM) there is also the **Bedrock Model Evaluation job** (accuracy, robustness, toxicity) — but this is a model development loop tool, not a substitute for an agent evaluation suite: it does not cover correct tool invocation or Knowledge Base retrieval quality.
 
-## Referencias
+## References
 
 - Anthropic — [Demystifying evals for AI agents](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)
 - LangChain — [The Agent Development Lifecycle](https://www.langchain.com/blog/the-agent-development-lifecycle)

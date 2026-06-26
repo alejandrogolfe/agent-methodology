@@ -1,75 +1,75 @@
 # 📊 Monitor
 
-[← Deploy](03-deploy.md) · [Volver al índice](../README.md) · Siguiente: [🛡️ Governance →](05-governance.md)
+[← Deploy](03-deploy.md) · [Back to index](../README.md) · Next: [🛡️ Governance →](05-governance.md)
 
-## La idea central
+## The core idea
 
-Monitorizar agentes es distinto de monitorizar software tradicional. Métricas como latencia, coste, tasa de errores y uptime siguen importando, pero son solo una parte del cuadro. **Un agente puede devolver una respuesta técnicamente exitosa (200 OK, sin excepción) y aun así haber fallado la tarea**: llamó a la herramienta equivocada, se apoyó en el contexto equivocado, se saltó un paso de aprobación obligatorio, o produjo una respuesta que suena plausible pero es incorrecta.
+Monitoring agents is different from monitoring traditional software. Metrics like latency, cost, error rate and uptime still matter, but they are only part of the picture. **An agent can return a technically successful response (200 OK, no exception) and still have failed the task**: it called the wrong tool, relied on the wrong context, skipped a mandatory approval step, or produced a response that sounds plausible but is incorrect.
 
-Para detectar esos fallos hace falta algo más granular que un dashboard de infraestructura: hacen falta **trazas**.
+Detecting those failures requires something more granular than an infrastructure dashboard: you need **traces**.
 
 ```mermaid
 flowchart LR
-    PROD["🏭 Tráfico de producción"] --> TR["🔍 TRACING<br/>trayectoria completa:<br/>inputs, model calls,<br/>tool calls, outputs"]
-    TR --> OE["⚖️ ONLINE EVALS<br/>LLM-as-judge + reglas<br/>sobre tráfico real"]
-    TR --> FB["💬 FEEDBACK<br/>humano, usuario,<br/>juez automático"]
-    OE --> DASH["📈 DASHBOARDS & ALERTAS<br/>tendencias, umbrales"]
+    PROD["🏭 Production traffic"] --> TR["🔍 TRACING<br/>full trajectory:<br/>inputs, model calls,<br/>tool calls, outputs"]
+    TR --> OE["⚖️ ONLINE EVALS<br/>LLM-as-judge + rules<br/>on real traffic"]
+    TR --> FB["💬 FEEDBACK<br/>human, user,<br/>automatic judge"]
+    OE --> DASH["📈 DASHBOARDS & ALERTS<br/>trends, thresholds"]
     FB --> DASH
-    DASH -.->|casos difíciles y fallos<br/>nuevos en producción| BACK["Vuelta a Test/Build<br/>(dataset + regression coverage)"]
+    DASH -.->|hard cases and new<br/>failures in production| BACK["Back to Test/Build\n(dataset + regression coverage)"]
 ```
 
-## Tracing — la base de todo lo demás
+## Tracing — the foundation of everything else
 
-Una traza captura la trayectoria completa del agente: los inputs que recibió, las llamadas al modelo que hizo, las herramientas que invocó, las salidas que recibió de vuelta y la respuesta o acción final que produjo. Este es el nivel de detalle necesario para entender qué hizo el agente *de verdad* — no lo que asumo que hizo.
+A trace captures the agent's complete trajectory: the inputs it received, the model calls it made, the tools it invoked, the outputs it got back, and the final response or action it produced. This is the level of detail needed to understand what the agent *actually* did — not what I assume it did.
 
-La idea de fondo (y la razón por la que esto se trata como pieza central, no como "logging más detallado") es que **la observabilidad de agentes es lo que hace posible la evaluación de agentes**: sin poder ver la trayectoria paso a paso, no se puede depurar de forma fiable un comportamiento ni convertir un fallo real en un caso de test futuro. El ciclo de mejora del agente literalmente *empieza* en la traza — es la materia prima de la que salen los nuevos casos para [Test](02-test.md).
+The underlying idea (and the reason this is treated as a central piece, not as "more detailed logging") is that **agent observability is what makes agent evaluation possible**: without being able to see the step-by-step trajectory, you cannot reliably debug behavior or convert a real failure into a future test case. The agent improvement cycle literally *starts* from the trace — it is the raw material from which new cases for [Test](02-test.md) are drawn.
 
-## Online evals — señales sobre tráfico real
+## Online evals — signals on real traffic
 
-Monitorizar también significa extraer **señales** de esas trazas de forma sistemática, no solo guardarlas para inspección manual.
+Monitoring also means extracting **signals** from those traces systematically, not just storing them for manual inspection.
 
-- **LLM-as-judge**: un modelo evaluador puntúa si el agente respondió la pregunta del usuario, siguió la política, usó el tono adecuado, o completó la tarea correctamente — sobre tráfico real, sin necesidad de desplegar código nuevo para cada chequeo.
-- **Señales simples basadas en reglas**: una expresión regular puede comprobar si apareció una frase obligatoria, si se llamó a una herramienta prohibida, o si ocurrió un patrón de fallo ya conocido. Estas señales son baratas, deterministas, y muchas veces más fiables que un juicio de LLM para casos concretos y bien definidos.
+- **LLM-as-judge**: an evaluator model scores whether the agent answered the user's question, followed the policy, used the right tone, or completed the task correctly — on real traffic, without needing to deploy new code for each check.
+- **Simple rule-based signals**: a regular expression can check whether a mandatory phrase appeared, whether a prohibited tool was called, or whether a known failure pattern occurred. These signals are cheap, deterministic, and often more reliable than an LLM judgment for specific, well-defined cases.
 
-Estas señales no solo sirven para control de calidad. Son también una forma de **analítica de producto**: qué tareas piden los usuarios de verdad, dónde se atascan los agentes, con qué frecuencia los usuarios corrigen al agente, y dónde perciben los usuarios que hay errores.
+These signals are not just for quality control. They are also a form of **product analytics**: what tasks users actually request, where agents get stuck, how often users correct the agent, and where users perceive errors.
 
-## Feedback — cerrar el círculo con juicio humano y de usuario
+## Feedback — closing the loop with human and user judgment
 
-No basta con guardar trazas: hace falta guardar **feedback junto a esas trazas**. El feedback puede venir de jueces LLM, de señales basadas en reglas, de revisores humanos, o de feedback directo del usuario recogido vía API.
+Storing traces is not enough: you need to store **feedback alongside those traces**. Feedback can come from LLM judges, rule-based signals, human reviewers, or direct user feedback collected via API.
 
-Lo importante es la **conexión**: poder atar "el usuario estuvo insatisfecho" a "el agente usó la herramienta equivocada tres pasos antes" en la misma traza. Sin esa conexión, el feedback es ruido suelto sin capacidad de diagnóstico.
+What matters is the **connection**: being able to link "the user was unsatisfied" to "the agent used the wrong tool three steps earlier" in the same trace. Without that connection, feedback is loose noise without diagnostic power.
 
-## Dashboards y alertas
+## Dashboards and alerts
 
-Finalmente, hacen falta dashboards y alertas que muestren tendencias en el tiempo, no solo el estado del momento. Un dashboard útil de agente trackea: uso, feedback, latencia, coste, llamadas a herramientas, puntuaciones de evaluadores, y patrones de fallo recurrentes.
+Finally, you need dashboards and alerts that show trends over time, not just the current state. A useful agent dashboard tracks: usage, feedback, latency, cost, tool calls, evaluator scores, and recurring failure patterns.
 
-Las alertas deberían dispararse cuando se cruzan umbrales importantes: latencia subiendo, coste subiendo, herramientas fallando, feedback de usuario cayendo, o picos de violaciones de política.
+Alerts should fire when important thresholds are crossed: latency rising, cost rising, tools failing, user feedback dropping, or spikes in policy violations.
 
-> Buen monitoreo no es solo saber si el sistema está "up". Es entender si el agente está haciendo el trabajo correcto, de la forma correcta, y mejorando con el tiempo.
+> Good monitoring is not just knowing whether the system is "up". It is understanding whether the agent is doing the right work, in the right way, and improving over time.
 
-## El bucle de vuelta: cómo Monitor alimenta a Build
+## The feedback loop: how Monitor feeds Build
 
-Los sistemas de monitorización más fuertes alimentan directamente la evaluación: las trazas importantes se convierten en ejemplos de dataset (ver [Test → Inputs](02-test.md#inputs--de-dónde-salen-los-casos-de-prueba)), los fallos recurrentes se convierten en métricas, y el comportamiento de producción se convierte en la base de la siguiente ronda de mejora.
+The strongest monitoring systems feed directly into evaluation: important traces become dataset examples (see [Test → Inputs](02-test.md#inputs--where-test-cases-come-from)), recurring failures become metrics, and production behavior becomes the foundation of the next improvement round.
 
-Este es el motivo por el que el ciclo se dibuja como un círculo y no como una línea: lo que se aprende monitorizando se convierte literalmente en los datasets y experimentos de la siguiente vuelta de build/test.
+This is the reason the cycle is drawn as a circle and not a line: what is learned from monitoring literally becomes the datasets and experiments of the next build/test round.
 
-## Preguntas para decidir
+## Key decisions
 
-1. **¿Puedo reconstruir qué hizo el agente paso a paso para un caso concreto que falló?** Si no, falta tracing — sin esto, todo lo demás (online evals, dashboards) se queda cojo.
-2. **¿Mis evaluadores corren también sobre producción, o solo en desarrollo?** Si solo en desarrollo, me estoy perdiendo justo los casos que el dataset offline no anticipó.
-3. **¿El feedback (humano o de usuario) está conectado a la traza concreta, o vive suelto en otro sistema?** Si vive suelto, pierdo la capacidad de diagnosticar la causa raíz.
-4. **¿Qué umbral, si se cruza, me tiene que despertar de madrugada?** Definir esto explícitamente evita que las alertas sean ruido o, peor, que no existan.
-5. **¿Esta traza interesante ya está en mi dataset de regression coverage?** Si detecto un fallo nuevo en producción y no lo llevo de vuelta al dataset, el ciclo se rompe — vuelve a pasar.
+1. **Can I reconstruct what the agent did step by step for a specific case that failed?** If not, tracing is missing — without this, everything else (online evals, dashboards) is hobbled.
+2. **Do my evaluators also run on production, or only in development?** If only in development, I am missing exactly the cases that the offline dataset didn't anticipate.
+3. **Is feedback (human or user) connected to the specific trace, or does it live separately in another system?** If it lives separately, I lose the ability to diagnose the root cause.
+4. **What threshold, if crossed, should wake me up in the middle of the night?** Defining this explicitly prevents alerts from being noise or, worse, nonexistent.
+5. **Is this interesting trace already in my regression coverage dataset?** If I detect a new failure in production and don't bring it back to the dataset, the cycle breaks — it happens again.
 
-## Conexión con AWS
+## AWS Connection
 
-- **Tracing** → **Amazon Bedrock AgentCore Observability**, instrumentado con el SDK de **AWS Distro for OpenTelemetry (ADOT)**. Da métricas, spans y trazas por defecto en **Amazon CloudWatch** para los recursos de runtime, memoria, gateway, herramientas integradas e identidad. Soporta también agentes que corren fuera de AgentCore Runtime, siempre que se instrumenten con ADOT — útil si el runtime de ejecución no es de AWS pero se quiere centralizar observabilidad ahí.
-- **Online evals** → **AgentCore Evaluations**, modo *online evaluation*: muestrea y puntúa de forma continua trazas en producción, usando los mismos evaluadores integrados (13 a la fecha de esta nota: calidad de respuesta, seguridad, finalización de tarea, uso de herramientas) que se usan en el modo on-demand para CI/CD (ver [Test](02-test.md#conexión-con-aws)).
-- **Dashboards y alertas** → directamente en **CloudWatch**: la página de observabilidad generativa de CloudWatch para las métricas estándar de AgentCore, más alarmas vía `PutMetricAlarm` (por ejemplo, alertar si la tasa de error supera el 5% o la latencia supera 1 segundo).
-- **Feedback estructurado** → no hay un servicio AWS nativo equivalente al feedback-adjunto-a-run de LangSmith; en la práctica esto se modela como metadata adicional en los logs/spans de CloudWatch o como un campo de la traza que se envía junto al span vía el SDK de evaluación.
-- Si el equipo ya usa LangGraph/Deep Agents sobre AgentCore Runtime, **LangSmith Observability** puede convivir con CloudWatch: LangSmith para trazas detalladas a nivel de agente (estructura de threads, sub-agentes, herramientas) y CloudWatch para la vista de infraestructura/operaciones — no son mutuamente excluyentes.
+- **Tracing** → **Amazon Bedrock AgentCore Observability**, instrumented with the **AWS Distro for OpenTelemetry (ADOT)** SDK. Gives metrics, spans and traces by default in **Amazon CloudWatch** for runtime, memory, gateway, built-in tools and identity resources. Also supports agents running outside AgentCore Runtime, as long as they are instrumented with ADOT — useful if the execution runtime is not AWS but you want to centralize observability there.
+- **Online evals** → **AgentCore Evaluations**, *online evaluation* mode: continuously samples and scores production traces, using the same built-in evaluators (13 as of this note: response quality, safety, task completion, tool use) as the on-demand mode for CI/CD (see [Test](02-test.md#aws-connection)).
+- **Dashboards and alerts** → directly in **CloudWatch**: the CloudWatch generative observability page for AgentCore standard metrics, plus alarms via `PutMetricAlarm` (for example, alerting if the error rate exceeds 5% or latency exceeds 1 second).
+- **Structured feedback** → there is no native AWS service equivalent to LangSmith's feedback-attached-to-run; in practice this is modeled as additional metadata in CloudWatch logs/spans or as a field in the trace sent along with the span via the evaluation SDK.
+- If the team already uses LangGraph/Deep Agents on AgentCore Runtime, **LangSmith Observability** can coexist with CloudWatch: LangSmith for detailed agent-level traces (thread structure, sub-agents, tools) and CloudWatch for the infrastructure/operations view — they are not mutually exclusive.
 
-## Referencias
+## References
 
 - LangChain — [The Agent Development Lifecycle](https://www.langchain.com/blog/the-agent-development-lifecycle)
 - LangChain — [Agent observability powers agent evaluation](https://www.langchain.com/blog/agent-observability-powers-agent-evaluation)

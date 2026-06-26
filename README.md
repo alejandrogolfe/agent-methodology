@@ -1,21 +1,21 @@
-# Metodología de Desarrollo de Agentes de IA
+# AI Agent Development Methodology
 
-> Notas personales de metodología para diseñar, construir, evaluar, desplegar y operar agentes de IA en producción, organizadas alrededor del ciclo **Build → Test → Deploy → Monitor → (Build...)**.
+> Personal methodology notes for designing, building, evaluating, deploying and operating AI agents in production, organized around the **Build → Test → Deploy → Monitor → (Build...)** cycle.
 
-Este repositorio no es documentación de una herramienta concreta. Es un mapa mental propio: cada vez que aprenda algo nuevo sobre cómo construir agentes de forma fiable, lo añado a la sección que corresponda. La idea es que dentro de un año esto sea una referencia rápida de "cómo decido X cuando construyo un agente", no una colección de enlaces sueltos.
+This repository is not documentation for a specific tool. It is a personal mental map: every time I learn something new about how to build agents reliably, I add it to the appropriate section. The goal is that, a year from now, this will be a quick reference for "how I decide X when building an agent" — not a collection of scattered links.
 
-## Por qué un ciclo y no una lista de pasos
+## Why a cycle and not a list of steps
 
-Un agente no se "termina". Se construye una versión, se prueba, se despliega de forma controlada, se observa cómo se comporta con tráfico real, y eso genera el material (casos difíciles, fallos, trazas) que alimenta la siguiente vuelta de construcción. Tratar esto como un ciclo cerrado — y no como un proyecto lineal con un final — es la diferencia entre un demo que funciona una vez y un sistema que mejora con el tiempo.
+An agent is never "done". You build a version, test it, deploy it in a controlled way, observe how it behaves with real traffic, and that generates the material (hard cases, failures, traces) that feeds the next build iteration. Treating this as a closed cycle — and not as a linear project with an end — is the difference between a demo that works once and a system that improves over time.
 
 ```mermaid
 flowchart LR
-    B["🔨 BUILD<br/>frameworks, runtimes,<br/>harnesses"] --> T["🧪 TEST<br/>inputs, datasets,<br/>métricas, experimentos"]
+    B["🔨 BUILD<br/>frameworks, runtimes,<br/>harnesses"] --> T["🧪 TEST<br/>inputs, datasets,<br/>metrics, experiments"]
     T --> D["🚀 DEPLOY<br/>runtime, sandbox,<br/>filesystem, context hub"]
     D --> M["📊 MONITOR<br/>tracing, online evals,<br/>feedback, dashboards"]
-    M -.->|señales y trazas reales| B
+    M -.->|real signals and traces| B
 
-    G["🛡️ GOBERNANZA<br/>coste · acceso a tools · auditoría<br/>human-in-the-loop · discoverability"] -.-> B
+    G["🛡️ GOVERNANCE<br/>cost · tool access · audit<br/>human-in-the-loop · discoverability"] -.-> B
     G -.-> T
     G -.-> D
     G -.-> M
@@ -27,31 +27,31 @@ flowchart LR
     style G fill:#475569,color:#fff
 ```
 
-La gobernanza no es una quinta fase: envuelve a las cuatro. Cuando hay un solo agente, unos controles ligeros bastan. Cuando hay decenas, sin gobernanza el sistema se vuelve imposible de auditar, caro y opaco.
+Governance is not a fifth phase: it wraps the other four. When there is a single agent, light controls are enough. When there are dozens, without governance the system becomes impossible to audit, expensive and opaque.
 
-## Índice de secciones
+## Sections index
 
-| Fase | Qué cubre | Página |
+| Phase | What it covers | Page |
 |---|---|---|
-| 🔨 **Build** | Frameworks vs. runtimes vs. harnesses, nivel de control necesario, no-code vs. code-first | [`docs/01-build.md`](docs/01-build.md) |
-| 🧪 **Test** | Inputs, datasets, métricas, experimentos, simulaciones multi-turno | [`docs/02-test.md`](docs/02-test.md) |
-| 🚀 **Deploy** | Runtime de producción, sandboxes, virtual filesystem, context hub | [`docs/03-deploy.md`](docs/03-deploy.md) |
-| 📊 **Monitor** | Tracing, online evals, señales, feedback, dashboards y alertas | [`docs/04-monitor.md`](docs/04-monitor.md) |
-| 🛡️ **Governance** | Coste, acceso a herramientas, auditoría, human-in-the-loop, discoverability | [`docs/05-governance.md`](docs/05-governance.md) |
-| ☁️ **AWS Mapping** | Tabla resumen de qué servicio de AWS cubre cada pieza del ciclo | [`docs/06-aws-mapping.md`](docs/06-aws-mapping.md) |
-| 📓 **Glosario** | Términos que me costó entender la primera vez (dogfooding trace, context hub, etc.) | [`docs/07-glosario.md`](docs/07-glosario.md) |
+| 🔨 **Build** | Frameworks vs. runtimes vs. harnesses, required level of control, no-code vs. code-first | [`docs/01-build.md`](docs/01-build.md) |
+| 🧪 **Test** | Inputs, datasets, metrics, experiments, multi-turn simulations | [`docs/02-test.md`](docs/02-test.md) |
+| 🚀 **Deploy** | Production runtime, sandboxes, virtual filesystem, context hub | [`docs/03-deploy.md`](docs/03-deploy.md) |
+| 📊 **Monitor** | Tracing, online evals, signals, feedback, dashboards and alerts | [`docs/04-monitor.md`](docs/04-monitor.md) |
+| 🛡️ **Governance** | Cost, tool access, audit, human-in-the-loop, discoverability | [`docs/05-governance.md`](docs/05-governance.md) |
+| ☁️ **AWS Mapping** | Summary table of which AWS service covers each part of the cycle | [`docs/06-aws-mapping.md`](docs/06-aws-mapping.md) |
+| 📓 **Glossary** | Terms that were hard to understand the first time (dogfooding trace, context hub, etc.) | [`docs/07-glosario.md`](docs/07-glosario.md) |
 
-## Cómo usar este repo
+## How to use this repo
 
-- Cada página de `docs/` es independiente: se puede leer una sola sin haber leído las demás.
-- Las páginas tienen una sección **"Preguntas para decidir"** — son las preguntas que me hago en cada proyecto real antes de elegir herramienta o enfoque.
-- Las páginas tienen una sección **"Conexión con AWS"** — cómo materializo cada concepto si el stack es AWS (principal cloud que uso). Si cambio de cloud, esta es la sección a reescribir; el resto de la metodología es agnóstica.
-- Todo lo que no tengo claro al 100% lo marco con 🚧 — son notas vivas, no verdades cerradas.
+- Each page in `docs/` is independent: you can read one without having read the others.
+- The pages have a **"Key decisions"** section — these are the questions I ask myself in every real project before choosing a tool or approach.
+- The pages have an **"AWS Connection"** section — how I materialize each concept if the stack is AWS (the main cloud I use). If I switch clouds, this is the section to rewrite; the rest of the methodology is cloud-agnostic.
+- Anything I am not 100% clear on is marked with 🚧 — these are living notes, not settled truths.
 
-## Origen y referencias
+## Origin and references
 
-La estructura del ciclo Build → Test → Deploy → Monitor → Govern está inspirada en una charla/artículo de LangChain ("The Agent Development Lifecycle", Harrison Chase, 2026) y en el enfoque de evaluación de agentes de Anthropic ("Demystifying evals for AI agents"). Las referencias completas están al final de cada página.
+The structure of the Build → Test → Deploy → Monitor → Govern cycle is inspired by a talk/article from LangChain ("The Agent Development Lifecycle", Harrison Chase, 2026) and by Anthropic's approach to agent evaluation ("Demystifying evals for AI agents"). Full references are at the bottom of each page.
 
 ---
 
-*Última actualización: ver historial de commits. Repo personal de notas — no es documentación oficial de ningún producto.*
+*Last updated: see commit history. Personal notes repo — not official documentation for any product.*
